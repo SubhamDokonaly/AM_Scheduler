@@ -1,0 +1,35 @@
+{
+  "port": "5000",
+  "mongodb": {
+    "host": "192.168.0.200",
+    "port": "37017",
+    "database": "allmastersdev",
+    "username": "AMSdev_rw",
+    "password": "$Amsrw23$"
+  },
+  "booking": {
+    "bIdFormat": "AM",
+    "placeOrderFormat": "PL"
+  },
+  "settings": {
+    "apiUrl": "192.168.0.200:1000/",
+    "uiUrl": "http://dev.ams.ai",
+    "nodeFileUploads": "fileuploads/",
+    "siteTitle": "allmasters",
+    "siteUrl": "http://dev.ams.ai/",
+    "otpUrl": "http://dev.ams.ai/otp/",
+    "changePasswordUrl": "http://dev.ams.ai/change-password/",
+    "createPasswordUrl": "http://dev.ams.ai/create-password/",
+    "cfsPasswordUrl": "http://dev.ams.ai/cfspassword/",
+    "milestoneUrl": "http://dev.ams.ai/user/mybookings/",
+    "dcfsMilestoneUrl": "http://dev.ams.ai/dcfs/bookings/",
+    "termsConditionurl": "http://dev.ams.ai/termsconditons",
+    "serviceFeedbackurl": "http://dev.ams.ai/servicefeedback/",
+    "linkdinUrl": "https://www.linkedin.com/company/allmasters-ai/",
+    "instaUrl": "https://www.instagram.com/allmasters.ai/"
+  },
+  "azureFilePath": {
+    "shareName": "files",
+    "directory": "All Masters/Dev"
+  }
+}
