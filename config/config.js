@@ -6,7 +6,8 @@ var CONFIG = {}
 CONFIG.ENV = (process.env.NODE_ENV || 'development');
 CONFIG.PORT = (process.env.VCAP_APP_PORT || config.port);
 CONFIG.DB_URL = 'mongodb://' + config.mongodb.username + ':' + config.mongodb.password + '@' + config.mongodb.host + ':' + config.mongodb.port + '/' + config.mongodb.database + '?authSource=admin';
-// CONFIG.DB_URL = 'mongodb://192.168.0.108:27017/allmasters';
+CONFIG.DB_URL2 = 'mongodb://localhost:27017/scheduler';
+// CONFIG.DB_URL = "mongodb://localhost:27017"
 CONFIG.SECRET_KEY = process.env.SECRET_KEY
 CONFIG.API_KEY = process.env.API_KEY
 CONFIG.SESSION_KEY = process.env.SESSION_KEY

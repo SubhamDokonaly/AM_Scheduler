@@ -1,7 +1,7 @@
 let mongoose = require("mongoose");
 const ObjectId = mongoose.Schema.Types.ObjectId
 //country Schema
-let countrySchema = mongoose.Schema({
+let countrySchema = new mongoose.Schema({
     countryName: {
         type: String,
         unique: true,
@@ -59,5 +59,6 @@ let countrySchema = mongoose.Schema({
     }
 }, { timestamps: true, versionKey: false });
 
-module.exports = mongoose.model("country", countrySchema); 
+module.exports = countrySchema
+
 

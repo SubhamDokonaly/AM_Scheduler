@@ -1,17 +1,23 @@
 //Mongodb Imports
 const mongoose = require('mongoose')
 
-//Schema Imports
-const country = require('../schema/main/country')
-const lane = require('../schema/main/lane')
-const schedule = require('../schema/main/schedule')
-const { ObjectId } = require('bson')
 
-//DB Collection Schema
+const { ObjectId } = require('bson')
+const dbconn = require('../config/dbconn')()
+
+
+let country = dbconn.countryModel
+let lane = dbconn.laneModel
+let schedule = dbconn.scheduleModel
+let timezone = dbconn.timezoneModel
+let joblog = dbconn.jobLogsModel 
+
 const db = {
   country,
   lane,
-  schedule
+  schedule,
+  timezone,
+  joblog
 }
 
 /**All mongoose queryfunction and normal functions */

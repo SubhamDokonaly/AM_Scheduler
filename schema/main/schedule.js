@@ -1,7 +1,7 @@
 let mongoose = require("mongoose");
 const ObjectId = mongoose.Schema.Types.ObjectId
 //Schedule Schema
-let scheduleSchema = mongoose.Schema({
+let scheduleSchema = new mongoose.Schema({
     scheduleId: {
         type: String,
         unique: true,
@@ -140,5 +140,5 @@ let scheduleSchema = mongoose.Schema({
     },
 }, { timestamps: true, versionKey: false });
 
-module.exports = mongoose.model("schedule", scheduleSchema);
+module.exports = scheduleSchema;
 

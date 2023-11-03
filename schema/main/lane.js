@@ -1,7 +1,7 @@
 let mongoose = require("mongoose");
 const ObjectId = mongoose.Schema.Types.ObjectId
 //Lane Schema
-let laneSchema = mongoose.Schema({
+let laneSchema = new mongoose.Schema({
     portName: {
         type: String,
         require: true,
@@ -49,5 +49,5 @@ let laneSchema = mongoose.Schema({
     },
 }, { timestamps: true, versionKey: false });
 
-module.exports = mongoose.model("lane", laneSchema); 
+module.exports = laneSchema; 
 
