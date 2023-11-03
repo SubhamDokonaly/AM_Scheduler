@@ -7,11 +7,10 @@ const express = require("express"), // $ npm install express
     morgan = require('morgan'),
     fs = require('fs'),
     path = require("path"); // Node In-Build Module
-const CONFIGJSON = require('./config/config.json')
 const cors = require("cors");
-const dbconn = require("./config/dbconn");
-
+require("./model/dbConnection");
 require("./model/cron")
+
 const app = express(); // Initializing ExpressJS
 const server = require("http").createServer(app);
 app.set('trust proxy', 1) // trust first proxy
@@ -22,12 +21,6 @@ app.use(cors({
     methods: ["GET", "POST"],
     allowedHeaders: ["Origin", "X-Requested-with", "Content-Type", "Accept", "Authorization"],
 }))
-
-
-dbconn()
-
-
-
 
 /** Middleware Configuration */
 app.set("etag", false)
@@ -43,7 +36,6 @@ app.use((err, req, res, next) => {
         next(err); // Forwarding other errors to the next middleware
     }
 });
-// app.use("/fileuploads", express.static(path.join(__dirname, "/fileuploads"), { etag: false }))
 
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
 
@@ -75,7 +67,6 @@ app.use(morgan(
 
     }, { stream: accessLogStream }));
 
-require("./routes/schedule/schedule")(app);
 /** HTTP Server Instance */
 try {
     server.listen(CONFIG.PORT, () => {
@@ -85,5 +76,3 @@ try {
     console.log("TCL: ex", ex)
 }
 /** /HTTP Server Instance */
-
-

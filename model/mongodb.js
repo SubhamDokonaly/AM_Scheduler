@@ -1,10 +1,8 @@
 //Mongodb Imports
 const mongoose = require('mongoose')
 
-
 const { ObjectId } = require('bson')
-const dbconn = require('../config/dbconn')()
-
+const dbconn = require('../model/dbConnection')()
 
 let country = dbconn.countryModel
 let lane = dbconn.laneModel
