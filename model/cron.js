@@ -4,46 +4,113 @@ const db = require('./mongodb')
 const logger = require("./logger")(__filename)
 // const moment = require('moment');
 const momentTimezone = require('moment-timezone')
+const moment = require("moment")
 const cron = require('cron').CronJob
-const amqp = require('amqplib');
-const queueName = "timezone"
+const { filterValidTz, checkValidTz } = require('./common')
 
-const connectToRabbitMQ = async () => {
+
+
+const createNewJobs = async (timezone) => {
     try {
         let countryData, laneData, scheduleCondition, scheduleData, currentTime, updateScheduleStatus,
-            scheduleIds, schedule_id, connection, channel, UTCTime, checkIfvalid
+            scheduleIds, schedule_id, getJobInfo, data
 
-        connection = await amqp.connect('amqp://localhost:5672');
-        channel = await connection.createChannel();
-        if (channel) {
-            console.log('Connected to RabbitMQ');
+        data = { status: 0, response: "Invalid request" }
+
+
+        if (timezone === undefined || timezone === null) {
+
+            return
         }
-        // Start consuming messages from the queue
-        await channel.assertQueue(queueName);
-        channel.consume(queueName, (msg) => {
-            if (msg !== null) {
-                console.log(msg);
-                UTCTime = msg.content.toString();
-                UTCTime = JSON.parse(UTCTime)
 
 
-                const validTimezones = momentTimezone.tz.names();
+        if (checkValidTz(timezone) === false) {
+            logger.error(`Invalid timezone added ${timezone}`);
 
-                checkIfvalid = validTimezones.includes(UTCTime);
+            return
+        }
 
-               if(checkIfvalid === false){
-                console.log(`Invalid timezone added ${UTCTime}`);
-                channel.ack(msg);
+        getJobInfo = new cron(`00 19 19 * * *`, async () => {
+            try {
+                countryData = await db.findSingleDocument("country", { timezone: timezone }, { _id: 1 })
+                laneData = await db.findAndSelect("lane", { country: countryData._id }, { _id: 1 })
+                currentTime = momentTimezone.tz(timezone).format('YYYY-MM-DDT23:59:00.000+00:00')
+                scheduleCondition = {
+                    $and: [
+                        { "pol": { $in: laneData } },
+                        { 'status': 1 },
+                        {
+                            'bookingCutOff': { $lte: Date(currentTime) },
+                        },
+                    ],
+                }
+                scheduleData = await db.findAndSelect("schedule", scheduleCondition, { _id: 1, scheduleId: 1 })
+                if (scheduleData && scheduleData.length !== 0) {
+                    schedule_id = scheduleData.map(e => e._id)
+                    scheduleIds = scheduleData.map(e => e.scheduleId)
+                    scheduleInfo = scheduleData.map(e => [{ "ScheduleId": e.scheduleId, "bookingCutOff": e.bookingCutOff }])
 
-                return
-               }
-                console.log(UTCTime);
-                new cron(`00 19 09 * * *`, async () => {
+                    updateScheduleStatus = await db.updateManyDocuments("schedule", { "_id": { $in: schedule_id } }, { status: 2 })
+                    if (updateScheduleStatus.modifiedCount !== 0 && updateScheduleStatus.matchedCount !== 0) {
+                        endsAt = moment().tz("Asia/Kolkata").format("dddd, MMMM Do YYYY, h:mm:ss a")
+                        data = {
+                            scheduleInfo: scheduleInfo,
+                            timezone: timezone,
+                            startsAt: startsAt,
+                            endsAt: endsAt,
+                            currentTimeIN: startsAt,
+                            currentTimeOC: currentTimeOC
+                        }
+                        await db.insertSingleDocument("joblog", data)
+                        logger.info(`Schedule Expired For - ${timezone} -to ScheduleIds - ${scheduleIds}`)
+
+                        return;
+                    }
+                }
+
+                logger.info(`Schedule Expired For - ${timezone} -No schedule Found`)
+            } catch (error) {
+                logger.error(`Error in cron model -scheduleJob : ${error.message}`)
+            }
+        },
+            null,
+            true,
+            `${timezone}`,
+        );
+        if (getJobInfo) {
+            logger.info(`Job successfully added for ${getJobInfo.cronTime.zone} `)
+
+            return
+        }
+
+        logger.error(data)
+    } catch (error) {
+        logger.error('Error creating new timezone:', error.message);
+    }
+};
+
+
+
+const scheduleJob = async () => {
+    try {
+        let countryData, laneData, scheduleCondition, scheduleData, currentTime, data, updateScheduleStatus,
+            scheduleIds, schedule_id, validTimezones, timezoneList, startsAt, endsAt, scheduleInfo, currentTimeOC
+
+
+        timezoneList = await db.getDistinctValues("country", "timezone")
+        validTimezones = await filterValidTz(timezoneList)
+
+        if (validTimezones.length !== 0) {
+            validTimezones.map((IANA) => {
+
+                logger.info(`Job successfully added for ${IANA.timezone} `)
+                new cron(`00 11 19 * * *`, async () => {
                     try {
-                        countryData = await db.findSingleDocument("country", { timezone: UTCTime }, { _id: 1 })
+                        startsAt = moment().tz("Asia/Kolkata").format("dddd, MMMM Do YYYY, h:mm:ss a")
+                        currentTimeOC = momentTimezone.tz(IANA.timezone).format("dddd, MMMM Do YYYY, h:mm:ss a")
+                        countryData = await db.findSingleDocument("country", { timezone: IANA.timezone }, { _id: 1 })
                         laneData = await db.findAndSelect("lane", { country: countryData._id }, { _id: 1 })
-                        currentTime = momentTimezone.tz(UTCTime).format('YYYY-MM-DDT23:59:00.000+00:00')
-                        console.log(`Current time in ${UTCTime}: ${currentTime}`)
+                        currentTime = momentTimezone.tz(IANA.timezone).format('YYYY-MM-DDT23:59:00.000+00:00')
                         scheduleCondition = {
                             $and: [
                                 { "pol": { $in: laneData } },
@@ -53,94 +120,50 @@ const connectToRabbitMQ = async () => {
                                 },
                             ],
                         }
-                        scheduleData = await db.findAndSelect("schedule", scheduleCondition, { _id: 1, scheduleId: 1 })
+                        scheduleData = await db.findAndSelect("schedule", scheduleCondition, { _id: 1, scheduleId: 1, bookingCutOff: 1 })
                         if (scheduleData && scheduleData.length !== 0) {
                             schedule_id = scheduleData.map(e => e._id)
                             scheduleIds = scheduleData.map(e => e.scheduleId)
+                            scheduleInfo = scheduleData.map(e => [{ "ScheduleId": e.scheduleId, "bookingCutOff": e.bookingCutOff }])
+
                             updateScheduleStatus = await db.updateManyDocuments("schedule", { "_id": { $in: schedule_id } }, { status: 2 })
                             if (updateScheduleStatus.modifiedCount !== 0 && updateScheduleStatus.matchedCount !== 0) {
-                                logger.info(`Schedule Expaired For - ${UTCTime} -to ScheduleIds - ${scheduleIds}`)
+                                endsAt = moment().tz("Asia/Kolkata").format("dddd, MMMM Do YYYY, h:mm:ss a")
+                                data = {
+                                    scheduleInfo: scheduleInfo,
+                                    timezone: IANA.timezone,
+                                    startsAt: startsAt,
+                                    endsAt: endsAt,
+                                    currentTimeIN: startsAt,
+                                    currentTimeOC: currentTimeOC
+                                }
+                                await db.insertSingleDocument("joblog", data)
+                                logger.info(`Schedule Expired For - ${IANA.timezone} -to ScheduleIds - ${scheduleIds}`)
 
                                 return;
                             }
                         }
-                        logger.info(`Schedule Expaired For - ${UTCTime} -No schedule Found`)
+                        logger.info(`Schedule Expired For - ${IANA.timezone} -No schedule Found`)
                     } catch (error) {
                         logger.error(`Error in cron model -scheduleJob : ${error.message}`)
                     }
                 },
                     null,
                     true,
-                    `${UTCTime}`,
+                    `${IANA.timezone}`,
                 );
-                console.log('Received message:', UTCTime);
-                channel.ack(msg);
-            }
-        });
+            })
 
-    } catch (error) {
-        console.error('Error connecting to RabbitMQ:', error);
-    }
-};
-connectToRabbitMQ();
-
-const scheduleJob = async () => {
-    try {
-        let countryUniqueTimezone, countryData, laneData, scheduleCondition, scheduleData, currentTime, updateScheduleStatus,
-            scheduleIds, schedule_id
-        countryUniqueTimezone = await db.getDistinctValues("country", "timezone")
-
-        let dataTz = countryUniqueTimezone.map((tz) => {
-            const key = "timezone"
-            const myObject = { [key]: tz };
-            return myObject
-        })
-
-        if (countryUniqueTimezone.length !== 0) {
-            await db.deleteManyDocument("timezone")
-            let getData = await db.insertManyDocuments("timezone", dataTz)
-            console.log(getData);
+            return
         }
+        if (validTimezones.length === 0) {
+            logger.info(`No timezone found`)
 
-        countryUniqueTimezone.map((UTCTime) => {
-            new cron(`00 40 11 * * *`, async () => {
-                try {
-                    countryData = await db.findSingleDocument("country", { timezone: UTCTime }, { _id: 1 })
-                    laneData = await db.findAndSelect("lane", { country: countryData._id }, { _id: 1 })
-                    currentTime = momentTimezone.tz(UTCTime).format('YYYY-MM-DDT23:59:00.000+00:00')
-                    console.log(`Current time in ${UTCTime}: ${currentTime}`)
-                    scheduleCondition = {
-                        $and: [
-                            { "pol": { $in: laneData } },
-                            { 'status': 1 },
-                            {
-                                'bookingCutOff': { $lte: Date(currentTime) },
-                            },
-                        ],
-                    }
-                    scheduleData = await db.findAndSelect("schedule", scheduleCondition, { _id: 1, scheduleId: 1 })
-                    if (scheduleData && scheduleData.length !== 0) {
-                        schedule_id = scheduleData.map(e => e._id)
-                        scheduleIds = scheduleData.map(e => e.scheduleId)
-                        updateScheduleStatus = await db.updateManyDocuments("schedule", { "_id": { $in: schedule_id } }, { status: 2 })
-                        if (updateScheduleStatus.modifiedCount !== 0 && updateScheduleStatus.matchedCount !== 0) {
-                            logger.info(`Schedule Expaired For - ${UTCTime} -to ScheduleIds - ${scheduleIds}`)
-
-                            return;
-                        }
-                    }
-                    logger.info(`Schedule Expaired For - ${UTCTime} -No schedule Found`)
-                } catch (error) {
-                    logger.error(`Error in cron model -scheduleJob : ${error.message}`)
-                }
-            },
-                null,
-                true,
-                `${UTCTime}`,
-            );
-        })
+            return
+        }
+        logger.error(data)
     } catch (error) {
-        console.log({ status: 0, response: error.message })
+        logger.error(`Error in cron model -scheduleJob : ${error.message}`)
     }
 }
 
@@ -149,5 +172,6 @@ scheduleJob()
 
 
 module.exports = {
-    scheduleJob
+    scheduleJob,
+    createNewJobs
 }

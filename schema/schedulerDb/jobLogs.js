@@ -2,31 +2,27 @@ let mongoose = require("mongoose");
 const ObjectId = mongoose.Schema.Types.ObjectId
 //Lane Schema
 let jobLogSchema = new mongoose.Schema({
-    scheduleId: {
-        type: String,
+    scheduleInfo: {
+        type: Array,
         require: true,
         trim: true,
-        ref: "country"
     },
     timezone: {
         type: String,
         require: true,
         trim: true,
     },
-    cutOffDate: {
-        type: Date,
-    },
     startsAt: {
-        type: Date,
+        type: String,
     },
     endsAt: {
-        type: Date,
+        type: String,
     },
-    currentTimeIN:{
-        type:Date
+    currentTimeIN: {
+        type: String
     },
-    currentTimeOC:{
-        type:Date
+    currentTimeOC: {
+        type: String
     }
 }, { timestamps: true, versionKey: false });
 

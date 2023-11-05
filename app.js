@@ -10,6 +10,7 @@ const express = require("express"), // $ npm install express
 const cors = require("cors");
 require("./model/dbConnection");
 require("./model/cron")
+require("./model/rmqConnection")
 
 const app = express(); // Initializing ExpressJS
 const server = require("http").createServer(app);
