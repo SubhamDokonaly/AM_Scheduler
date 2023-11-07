@@ -6,6 +6,7 @@ const logger = require("./logger")(__filename)
 const momentTimezone = require('moment-timezone')
 const cron = require('cron').CronJob
 
+// Existing Data
 const scheduleJob = async () => {
     try {
         let countryUniqueTimezone, countryData, laneData, scheduleCondition, scheduleData, currentTime, updateScheduleStatus,
@@ -68,7 +69,7 @@ const scheduleJob = async () => {
 
 scheduleJob()
 
-
+// Newly added Data
 const createNewJob = async (UTCTime) => {
     try {
         let countryData, laneData, scheduleCondition, scheduleData, currentTime, updateScheduleStatus,
@@ -114,9 +115,7 @@ const createNewJob = async (UTCTime) => {
     }
 }
 
-
-
-
+// cron data fetching in each 1 min
 new cron(`*/01 * * * *`, async () => {
     try {
         let countryData, timezoneData, newTimezone
@@ -136,8 +135,6 @@ new cron(`*/01 * * * *`, async () => {
     true,
     "Asia/Kolkata",
 );
-
-
 
 module.exports = {
     scheduleJob

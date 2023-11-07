@@ -3,7 +3,7 @@ const mongoose = require('mongoose')
 
 
 const { ObjectId } = require('bson')
-const dbconn = require('../config/dbconn')()
+const dbconn = require('./dbConnection')()
 
 
 let country = dbconn.countryModel
